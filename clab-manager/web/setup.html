@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ContainerLab Manager — Setup</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0e1a;--bg2:#0f1525;--bg3:#161e33;--border:#1e2d4a;--accent:#00d4ff;--green:#00ff88;--red:#ff4466;--yellow:#ffcc00;--text:#e0eaff;--text-dim:#5a7aaa;--mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+
+  .logo{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:4px;text-transform:uppercase;margin-bottom:8px;text-align:center;}
+  h1{font-size:32px;font-weight:800;margin-bottom:4px;text-align:center;}
+  h1 span{color:var(--accent);}
+  .subtitle{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:40px;text-align:center;}
+
+  /* Progress */
+  .progress{display:flex;gap:0;margin-bottom:40px;width:100%;max-width:700px;}
+  .step-dot{flex:1;text-align:center;position:relative;}
+  .step-dot::before{content:'';position:absolute;top:14px;left:50%;width:100%;height:2px;background:var(--border);}
+  .step-dot:last-child::before{display:none;}
+  .dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);background:var(--bg);display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--text-dim);position:relative;z-index:1;transition:all 0.3s;}
+  .step-dot.active .dot{border-color:var(--accent);color:var(--accent);box-shadow:0 0 12px rgba(0,212,255,0.3);}
+  .step-dot.done .dot{border-color:var(--green);background:var(--green);color:var(--bg);}
+  .step-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:6px;letter-spacing:1px;}
+  .step-dot.active .step-label{color:var(--accent);}
+  .step-dot.done .step-label{color:var(--green);}
+
+  /* Card */
+  .card{background:var(--bg2);border:1px solid var(--border);border-top:2px solid var(--accent);padding:36px 40px;width:100%;max-width:700px;margin-bottom:20px;}
+  .card-title{font-size:20px;font-weight:700;margin-bottom:6px;}
+  .card-desc{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:28px;line-height:1.6;}
+
+  /* Form */
+  .form-group{margin-bottom:20px;}
+  .form-label{display:block;font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+  .form-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:14px;padding:12px 16px;outline:none;transition:border-color 0.2s;}
+  .form-input:focus{border-color:var(--accent);}
+  .form-hint{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:6px;}
+
+  /* Buttons */
+  .btn{padding:12px 28px;font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.15s;border:none;}
+  .btn-primary{background:var(--accent);color:var(--bg);}
+  .btn-primary:hover{background:#33ddff;}
+  .btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text-dim);}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .btn-row{display:flex;gap:12px;justify-content:flex-end;margin-top:28px;}
+
+  /* Upload zone */
+  .upload-zone{border:2px dashed var(--border);padding:32px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative;}
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(0,212,255,0.03);}
+  .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+  .upload-icon{font-size:32px;margin-bottom:10px;}
+  .upload-text{font-family:var(--mono);font-size:12px;color:var(--text-dim);}
+  .upload-name{font-family:var(--mono);font-size:13px;color:var(--green);margin-top:8px;}
+
+  /* Check list */
+  .check-list{display:flex;flex-direction:column;gap:10px;}
+  .check-item{display:flex;align-items:center;gap:14px;padding:12px 16px;background:var(--bg3);border:1px solid var(--border);}
+  .check-icon{font-size:16px;width:24px;text-align:center;}
+  .check-label{font-family:var(--mono);font-size:13px;}
+  .check-value{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-left:auto;}
+  .ok{color:var(--green);}
+  .fail{color:var(--red);}
+  .warn{color:var(--yellow);}
+
+  /* Node preview table */
+  table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;}
+  th{background:var(--bg3);color:var(--text-dim);font-weight:500;padding:8px 12px;text-align:left;letter-spacing:1px;font-size:11px;}
+  td{padding:8px 12px;border-bottom:1px solid var(--border);}
+  .badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;}
+  .badge-router{background:rgba(0,212,255,0.15);color:var(--accent);}
+  .badge-pc{background:rgba(0,255,136,0.15);color:var(--green);}
+
+  /* RAM bar */
+  .ram-check{padding:16px;background:var(--bg3);border:1px solid var(--border);margin-bottom:16px;}
+  .ram-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;margin-bottom:8px;}
+  .ram-bar-track{height:6px;background:var(--bg);border-radius:3px;overflow:hidden;}
+  .ram-bar-fill{height:100%;border-radius:3px;transition:width 0.6s;}
+
+  /* Build log */
+  .log-box{background:#000;border:1px solid var(--border);padding:16px;font-family:var(--mono);font-size:11px;color:#00ff88;height:200px;overflow-y:auto;white-space:pre-wrap;line-height:1.5;}
+  .build-status{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-family:var(--mono);font-size:13px;}
+  .spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Error/success msg */
+  .msg{padding:12px 16px;font-family:var(--mono);font-size:12px;margin-bottom:16px;display:none;}
+  .msg.error{background:rgba(255,68,102,0.1);border:1px solid var(--red);color:var(--red);}
+  .msg.success{background:rgba(0,255,136,0.1);border:1px solid var(--green);color:var(--green);}
+  .msg.show{display:block;}
+
+  /* Done */
+  .done-box{text-align:center;padding:20px 0;}
+  .done-icon{font-size:56px;margin-bottom:16px;}
+  .done-title{font-size:24px;font-weight:800;margin-bottom:8px;}
+  .done-desc{font-family:var(--mono);font-size:13px;color:var(--text-dim);line-height:1.7;}
+</style>
+</head>
+<body>
+
+<div class="logo">ContainerLab Manager</div>
+<h1>First Time <span>Setup</span></h1>
+<p class="subtitle">Configure your lab environment in a few steps</p>
+
+<!-- Progress bar -->
+<div class="progress" id="progress">
+  <div class="step-dot active" id="sdot-1"><div class="dot">1</div><div class="step-label">System</div></div>
+  <div class="step-dot" id="sdot-2"><div class="dot">2</div><div class="step-label">Password</div></div>
+  <div class="step-dot" id="sdot-3"><div class="dot">3</div><div class="step-label">Topology</div></div>
+  <div class="step-dot" id="sdot-4"><div class="dot">4</div><div class="step-label">Router Image</div></div>
+  <div class="step-dot" id="sdot-5"><div class="dot">5</div><div class="step-label">Configure</div></div>
+  <div class="step-dot" id="sdot-6"><div class="dot">6</div><div class="step-label">Done</div></div>
+</div>
+
+<!-- Step 1: System check -->
+<div class="card" id="step-1">
+  <div class="card-title">System Requirements</div>
+  <div class="card-desc">Checking that all required components are installed on this server.</div>
+  <div class="check-list" id="sys-checks">
+    <div class="check-item"><div class="check-icon">⏳</div><div class="check-label">Checking...</div></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" id="step1-next" onclick="goStep(2)" disabled>Continue →</button>
+  </div>
+</div>
+
+<!-- Step 2: Password -->
+<div class="card" id="step-2" style="display:none">
+  <div class="card-title">Set Admin Password</div>
+  <div class="card-desc">This password protects the dashboard. Minimum 6 characters.</div>
+  <div class="msg error" id="pw-error"></div>
+  <div class="form-group">
+    <label class="form-label">Password</label>
+    <input type="password" class="form-input" id="pw1" placeholder="Enter password">
+  </div>
+  <div class="form-group">
+    <label class="form-label">Confirm Password</label>
+    <input type="password" class="form-input" id="pw2" placeholder="Confirm password">
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+    <button class="btn btn-primary" onclick="submitPassword()">Continue →</button>
+  </div>
+</div>
+
+<!-- Step 3: Topology upload -->
+<div class="card" id="step-3" style="display:none">
+  <div class="card-title">Upload Base Topology</div>
+  <div class="card-desc">Upload your tested working ContainerLab topology .yml file. It will be multiplied for each student.</div>
+  <div class="msg error" id="topo-error"></div>
+  <div class="upload-zone" id="topo-zone">
+    <input type="file" accept=".yml,.yaml" id="topo-file" onchange="uploadTopology(this)">
+    <div class="upload-icon">📄</div>
+    <div class="upload-text">Click or drag your topology .yml file here</div>
+    <div class="upload-name" id="topo-name"></div>
+  </div>
+  <div id="topo-preview" style="margin-top:20px;display:none">
+    <table>
+      <thead><tr><th>Node</th><th>Kind</th><th>Type</th><th>Image</th><th>Mgmt IP</th></tr></thead>
+      <tbody id="topo-tbody"></tbody>
+    </table>
+    <p style="font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-top:10px" id="link-count"></p>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goStep(2)">← Back</button>
+    <button class="btn btn-primary" id="step3-next" onclick="goStep(4)" disabled>Continue →</button>
+  </div>
+</div>
+
+<!-- Step 4: Router image -->
+<div class="card" id="step-4" style="display:none">
+  <div class="card-title">Router Image</div>
+  <div class="card-desc">Upload your Cisco .bin file. The server will build the vrnetlab Docker image automatically. This may take 10–20 minutes.</div>
+  <div class="msg error" id="bin-error"></div>
+  <div class="msg success" id="bin-success"></div>
+
+  <div class="upload-zone" id="bin-zone" style="margin-bottom:16px">
+    <input type="file" accept=".bin" id="bin-file" onchange="uploadBin(this)">
+    <div class="upload-icon">💾</div>
+    <div class="upload-text">Click or drag your .bin file here</div>
+    <div class="upload-name" id="bin-name"></div>
+  </div>
+
+  <div id="build-section" style="display:none">
+    <div class="build-status" id="build-status-row">
+      <div class="spinner" id="build-spinner" style="display:none"></div>
+      <span id="build-status-text">Ready to build</span>
+    </div>
+    <div class="log-box" id="build-log">Waiting for build to start...</div>
+    <div style="margin-top:12px">
+      <button class="btn btn-primary" id="build-btn" onclick="startBuild()">▶ Build Image</button>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goStep(3)">← Back</button>
+    <button class="btn btn-primary" id="step4-next" onclick="goStep(5)" disabled>Continue →</button>
+  </div>
+</div>
+
+<!-- Step 5: Configure -->
+<div class="card" id="step-5" style="display:none">
+  <div class="card-title">Configure Labs</div>
+  <div class="card-desc">Set the server IP, number of student labs, and review the RAM requirements.</div>
+  <div class="msg error" id="cfg-error"></div>
+
+  <div class="form-group">
+    <label class="form-label">Server IP</label>
+    <input type="text" class="form-input" id="server-ip" placeholder="e.g. 10.72.96.15">
+    <div class="form-hint">The IP students will SSH to</div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Number of Student Labs</label>
+    <input type="number" class="form-input" id="num-students" value="20" min="1" max="200" oninput="updateRamEstimate()">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Base SSH Port</label>
+    <input type="number" class="form-input" id="base-port" value="2200">
+    <div class="form-hint">Ports assigned as: base + (student × 10) + node_offset</div>
+  </div>
+
+  <div class="ram-check" id="ram-check">
+    <div class="ram-row"><span>Labs</span><span id="rc-students">--</span></div>
+    <div class="ram-row"><span>Estimated RAM needed</span><span id="rc-needed">-- GB</span></div>
+    <div class="ram-row"><span>Available RAM</span><span id="rc-avail">-- GB</span></div>
+    <div class="ram-bar-track">
+      <div class="ram-bar-fill" id="rc-bar" style="width:0%;background:var(--green)"></div>
+    </div>
+    <div class="ram-row" style="margin-top:8px"><span id="rc-msg" style="font-size:11px"></span></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goStep(4)">← Back</button>
+    <button class="btn btn-primary" onclick="submitConfig()">Generate Labs →</button>
+  </div>
+</div>
+
+<!-- Step 6: Done -->
+<div class="card" id="step-6" style="display:none">
+  <div class="done-box">
+    <div class="done-icon">🎉</div>
+    <div class="done-title">Setup Complete!</div>
+    <div class="done-desc" id="done-desc">
+      Your labs have been generated.<br>
+      Go to the dashboard to deploy them when ready.
+    </div>
+    <div class="btn-row" style="justify-content:center;margin-top:28px">
+      <a href="/"><button class="btn btn-primary">Go to Dashboard →</button></a>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentStep = 1;
+let buildTimer  = null;
+
+// ── Step navigation ────────────────────────────────────────────────────────
+function goStep(n) {
+  document.getElementById(`step-${currentStep}`).style.display = 'none';
+  document.getElementById(`sdot-${currentStep}`).classList.remove('active');
+  document.getElementById(`sdot-${currentStep}`).classList.add('done');
+  currentStep = n;
+  document.getElementById(`step-${n}`).style.display = 'block';
+  document.getElementById(`sdot-${n}`).classList.remove('done');
+  document.getElementById(`sdot-${n}`).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── Step 1: System check ───────────────────────────────────────────────────
+async function checkSystem() {
+  const r = await fetch('/api/setup/status');
+  const d = await r.json();
+  const list = document.getElementById('sys-checks');
+
+  const items = [
+    { label: 'Docker',        ok: d.docker,        value: d.docker ? 'Installed' : 'Not found' },
+    { label: 'ContainerLab',  ok: d.containerlab,   value: d.containerlab ? 'Installed' : 'Not found' },
+    { label: 'vrnetlab repo', ok: d.vrnetlab,       value: d.vrnetlab ? 'Found' : 'Not found — install vrnetlab first' },
+    { label: 'Available RAM', ok: d.ram_avail >= 8, value: `${d.ram_avail} GB / ${d.ram_gb} GB` },
+  ];
+
+  list.innerHTML = items.map(i => `
+    <div class="check-item">
+      <div class="check-icon">${i.ok ? '✅' : '❌'}</div>
+      <div class="check-label">${i.label}</div>
+      <div class="check-value ${i.ok ? 'ok' : 'fail'}">${i.value}</div>
+    </div>
+  `).join('');
+
+  // Auto-fill server IP in step 5
+  if (d.server_ip) {
+    document.getElementById('server-ip').value = d.server_ip;
+  }
+
+  const allOk = d.docker && d.containerlab && d.vrnetlab;
+  document.getElementById('step1-next').disabled = !allOk;
+}
+
+checkSystem();
+
+// ── Step 2: Password ───────────────────────────────────────────────────────
+async function submitPassword() {
+  const pw1 = document.getElementById('pw1').value;
+  const pw2 = document.getElementById('pw2').value;
+  const err = document.getElementById('pw-error');
+
+  if (pw1 !== pw2) { showMsg('pw-error', 'Passwords do not match'); return; }
+  if (pw1.length < 6) { showMsg('pw-error', 'Password must be at least 6 characters'); return; }
+
+  const r = await fetch('/api/setup/password', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({password: pw1})
+  });
+  const d = await r.json();
+  if (d.ok) goStep(3);
+  else showMsg('pw-error', d.error || 'Error saving password');
+}
+
+// ── Step 3: Topology ───────────────────────────────────────────────────────
+async function uploadTopology(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('topo-name').textContent = `📎 ${file.name}`;
+
+  const form = new FormData();
+  form.append('file', file);
+  const r = await fetch('/api/setup/topology', {method:'POST', body:form});
+  const d = await r.json();
+
+  if (!d.ok) { showMsg('topo-error', d.error); return; }
+
+  // Show preview
+  const s = d.summary;
+  document.getElementById('topo-preview').style.display = 'block';
+  document.getElementById('link-count').textContent =
+    `${s.node_count} nodes · ${s.link_count} links`;
+  document.getElementById('topo-tbody').innerHTML = s.nodes.map(n => `
+    <tr>
+      <td>${n.name}</td>
+      <td>${n.kind}</td>
+      <td><span class="badge badge-${n.type}">${n.type}</span></td>
+      <td style="color:var(--text-dim)">${n.image}</td>
+      <td style="color:var(--text-dim)">${n.mgmt}</td>
+    </tr>
+  `).join('');
+  document.getElementById('step3-next').disabled = false;
+}
+
+// ── Step 4: Router image ───────────────────────────────────────────────────
+async function uploadBin(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('bin-name').textContent = `📎 ${file.name} (uploading...)`;
+
+  const form = new FormData();
+  form.append('file', file);
+  const r = await fetch('/api/setup/upload_bin', {method:'POST', body:form});
+  const d = await r.json();
+
+  if (!d.ok) { showMsg('bin-error', d.error); return; }
+
+  document.getElementById('bin-name').textContent = `📎 ${file.name} — ${d.vendor}`;
+  document.getElementById('build-section').style.display = 'block';
+  showMsg('bin-success', `Detected: ${d.vendor} — Ready to build`);
+}
+
+async function startBuild() {
+  document.getElementById('build-btn').disabled = true;
+  document.getElementById('build-spinner').style.display = 'inline-block';
+  document.getElementById('build-status-text').textContent = 'Building image...';
+
+  await fetch('/api/setup/build_image', {method:'POST'});
+  buildTimer = setInterval(pollBuild, 3000);
+}
+
+async function pollBuild() {
+  const r = await fetch('/api/setup/build_status');
+  const d = await r.json();
+  document.getElementById('build-log').textContent = d.log || '(no output yet)';
+
+  if (d.status === 'success') {
+    clearInterval(buildTimer);
+    document.getElementById('build-spinner').style.display = 'none';
+    document.getElementById('build-status-text').textContent = `✅ Built: ${d.image}`;
+    document.getElementById('step4-next').disabled = false;
+  } else if (d.status === 'failed') {
+    clearInterval(buildTimer);
+    document.getElementById('build-spinner').style.display = 'none';
+    document.getElementById('build-status-text').textContent = '❌ Build failed — check log above';
+  }
+}
+
+// ── Step 5: Configure ──────────────────────────────────────────────────────
+async function updateRamEstimate() {
+  const n = parseInt(document.getElementById('num-students').value) || 0;
+  if (!n) return;
+  const r = await fetch(`/api/setup/ram_estimate?students=${n}`);
+  const d = await r.json();
+  document.getElementById('rc-students').textContent = n;
+  document.getElementById('rc-needed').textContent   = `~${d.needed_gb} GB`;
+  document.getElementById('rc-avail').textContent    = `${d.avail_gb} GB`;
+  const pct = Math.min((d.needed_gb / d.avail_gb) * 100, 100);
+  const bar = document.getElementById('rc-bar');
+  bar.style.width     = `${pct}%`;
+  bar.style.background = d.ok ? 'var(--green)' : 'var(--red)';
+  document.getElementById('rc-msg').textContent = d.ok
+    ? `✓ RAM looks sufficient for ${n} labs`
+    : `⚠ Estimated ${d.needed_gb}GB needed but only ${d.avail_gb}GB available`;
+  document.getElementById('rc-msg').style.color = d.ok ? 'var(--green)' : 'var(--yellow)';
+}
+
+updateRamEstimate();
+
+async function submitConfig() {
+  const serverIp   = document.getElementById('server-ip').value.trim();
+  const numStudents = parseInt(document.getElementById('num-students').value);
+  const basePort   = parseInt(document.getElementById('base-port').value);
+
+  if (!serverIp) { showMsg('cfg-error', 'Server IP is required'); return; }
+
+  const r = await fetch('/api/setup/configure', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({server_ip: serverIp, num_students: numStudents, base_port: basePort})
+  });
+  const d = await r.json();
+
+  if (!d.ok) { showMsg('cfg-error', d.error); return; }
+
+  document.getElementById('done-desc').innerHTML =
+    `<strong>${d.generated} student labs</strong> generated successfully.<br>
+     Server IP: <code style="color:var(--accent)">${serverIp}</code><br><br>
+     Go to the dashboard to deploy labs when ready.`;
+  goStep(6);
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function showMsg(id, text) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+</script>
+</body>
+</html>

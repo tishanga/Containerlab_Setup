@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab Access — Student Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0e1a;--bg2:#0f1525;--bg3:#161e33;--border:#1e2d4a;--accent:#00d4ff;--green:#00ff88;--red:#ff4466;--yellow:#ffcc00;--text:#e0eaff;--text-dim:#5a7aaa;--mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+
+  .logo{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:4px;text-transform:uppercase;margin-bottom:8px;text-align:center;}
+  h1{font-size:30px;font-weight:800;margin-bottom:4px;text-align:center;}
+  h1 span{color:var(--accent);}
+  .subtitle{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:40px;text-align:center;}
+
+  /* Lookup box */
+  .lookup-box{background:var(--bg2);border:1px solid var(--border);border-top:2px solid var(--accent);padding:36px 40px;width:100%;max-width:480px;margin-bottom:24px;}
+  .form-label{display:block;font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+  .form-row{display:flex;gap:10px;}
+  .form-input{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:18px;padding:12px 16px;outline:none;transition:border-color 0.2s;text-align:center;}
+  .form-input:focus{border-color:var(--accent);}
+  .lookup-btn{background:var(--accent);color:var(--bg);border:none;font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:12px 24px;cursor:pointer;transition:background 0.2s;}
+  .lookup-btn:hover{background:#33ddff;}
+  .error-msg{color:var(--red);font-family:var(--mono);font-size:12px;margin-top:10px;display:none;}
+
+  /* Result card */
+  .result-card{background:var(--bg2);border:1px solid var(--border);width:100%;max-width:640px;overflow:hidden;animation:slideUp 0.3s ease;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .result-header{background:var(--bg3);border-bottom:1px solid var(--border);padding:20px 28px;display:flex;justify-content:space-between;align-items:center;}
+  .result-title{font-size:20px;font-weight:800;}
+  .result-title span{color:var(--accent);}
+  .result-subnet{font-family:var(--mono);font-size:12px;color:var(--text-dim);}
+
+  /* Node table */
+  .node-list{padding:0;}
+  .node-item{display:flex;flex-direction:column;gap:8px;padding:18px 28px;border-bottom:1px solid var(--border);}
+  .node-item:last-child{border-bottom:none;}
+  .node-header{display:flex;align-items:center;gap:12px;}
+  .node-name{font-family:var(--mono);font-size:15px;font-weight:700;}
+  .node-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+  .badge-router{background:rgba(0,212,255,0.15);color:var(--accent);}
+  .badge-pc{background:rgba(0,255,136,0.15);color:var(--green);}
+  .node-port{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-left:auto;}
+
+  /* SSH command */
+  .ssh-cmd{background:var(--bg3);border:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .ssh-text{font-family:var(--mono);font-size:13px;color:var(--green);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .copy-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:5px 10px;cursor:pointer;transition:all 0.15s;white-space:nowrap;text-transform:uppercase;}
+  .copy-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .copy-btn.copied{border-color:var(--green);color:var(--green);}
+
+  /* Credentials box */
+  .creds-box{margin:20px 28px;padding:14px 18px;background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--yellow);}
+  .creds-title{font-family:var(--mono);font-size:11px;color:var(--yellow);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+  .creds-row{display:flex;gap:24px;flex-wrap:wrap;}
+  .creds-item{font-family:var(--mono);font-size:12px;color:var(--text-dim);}
+  .creds-item strong{color:var(--text);}
+</style>
+</head>
+<body>
+
+<div class="logo">ContainerLab Manager</div>
+<h1>Student <span>Lab Access</span></h1>
+<p class="subtitle">Enter your student number to get your SSH connection details</p>
+
+<div class="lookup-box">
+  <label class="form-label">Your Student Number</label>
+  <div class="form-row">
+    <input type="number" class="form-input" id="student-num" placeholder="e.g. 5" min="1" max="200">
+    <button class="lookup-btn" onclick="lookup()">Get Access</button>
+  </div>
+  <div class="error-msg" id="err-msg"></div>
+</div>
+
+<div class="result-card" id="result" style="display:none"></div>
+
+<script>
+document.getElementById('student-num').addEventListener('keydown', e => {
+  if (e.key === 'Enter') lookup();
+});
+
+// Auto-lookup if ?student=N in URL
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('student')) {
+  document.getElementById('student-num').value = urlParams.get('student');
+  lookup();
+}
+
+async function lookup() {
+  const n   = document.getElementById('student-num').value.trim();
+  const err = document.getElementById('err-msg');
+  err.style.display = 'none';
+
+  if (!n || isNaN(n) || parseInt(n) < 1) {
+    err.textContent = 'Please enter a valid student number';
+    err.style.display = 'block';
+    return;
+  }
+
+  try {
+    const r = await fetch(`/api/student/${n}`);
+    const d = await r.json();
+
+    if (d.error) {
+      err.textContent = d.error;
+      err.style.display = 'block';
+      document.getElementById('result').style.display = 'none';
+      return;
+    }
+
+    renderResult(d);
+  } catch(e) {
+    err.textContent = 'Failed to fetch lab info. Is the server running?';
+    err.style.display = 'block';
+  }
+}
+
+function renderResult(d) {
+  const card = document.getElementById('result');
+
+  const nodes = d.nodes.map(n => `
+    <div class="node-item">
+      <div class="node-header">
+        <div class="node-name">${n.node}</div>
+        <span class="node-badge badge-${n.type}">${n.type}</span>
+        <div class="node-port">port ${n.port} · ${n.mgmt_ip}</div>
+      </div>
+      <div class="ssh-cmd">
+        <div class="ssh-text">${n.command}</div>
+        <button class="copy-btn" onclick="copyCmd(this, '${n.command}')">Copy</button>
+      </div>
+    </div>
+  `).join('');
+
+  card.innerHTML = `
+    <div class="result-header">
+      <div>
+        <div class="result-title">Student <span>${String(d.student).padStart(2,'0')}</span></div>
+        <div class="result-subnet">Server: ${d.server_ip} · Mgmt: ${d.mgmt_subnet}</div>
+      </div>
+    </div>
+    <div class="node-list">${nodes}</div>
+    <div class="creds-box">
+      <div class="creds-title">⚠ Credentials</div>
+      <div class="creds-row">
+        <div class="creds-item">PCs — user: <strong>student</strong> · pass: <strong>${d.password_pc}</strong></div>
+        <div class="creds-item">Routers — <strong>${d.password_router}</strong></div>
+      </div>
+    </div>
+  `;
+
+  card.style.display = 'block';
+  card.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function copyCmd(btn, cmd) {
+  navigator.clipboard.writeText(cmd).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>

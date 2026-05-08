@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ContainerLab Manager — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0e1a;--bg2:#0f1525;--bg3:#161e33;--border:#1e2d4a;--accent:#00d4ff;--green:#00ff88;--red:#ff4466;--red-dim:#991133;--yellow:#ffcc00;--text:#e0eaff;--text-dim:#5a7aaa;--mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+
+  /* LOGIN */
+  #login-page{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:var(--bg);}
+  .login-box{background:var(--bg2);border:1px solid var(--border);border-top:2px solid var(--accent);padding:48px;width:380px;box-shadow:0 0 60px rgba(0,212,255,0.08);animation:slideUp 0.4s ease;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+  .login-logo{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;}
+  .login-title{font-size:26px;font-weight:800;margin-bottom:32px;line-height:1.2;}
+  .login-title span{color:var(--accent);}
+  .form-label{display:block;font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}
+  .form-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:14px;padding:12px 16px;outline:none;transition:border-color 0.2s;margin-bottom:20px;}
+  .form-input:focus{border-color:var(--accent);}
+  .login-btn{width:100%;background:var(--accent);color:var(--bg);border:none;font-family:var(--sans);font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:14px;cursor:pointer;transition:background 0.2s;}
+  .login-btn:hover{background:#33ddff;}
+  .login-error{color:var(--red);font-family:var(--mono);font-size:12px;margin-top:12px;display:none;}
+
+  /* DASHBOARD */
+  #dashboard{display:none;position:relative;z-index:1;}
+  .header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 32px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+  .header-brand{display:flex;align-items:center;gap:12px;}
+  .header-dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .header-title{font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:2px;color:var(--accent);text-transform:uppercase;}
+  .header-right{display:flex;align-items:center;gap:16px;}
+  .header-time{font-family:var(--mono);font-size:12px;color:var(--text-dim);}
+  .header-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:6px 14px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;text-decoration:none;display:inline-block;}
+  .header-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .header-btn.danger:hover{border-color:var(--red);color:var(--red);}
+
+  /* STATS */
+  .stats-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;gap:32px;align-items:center;flex-wrap:wrap;}
+  .stat-item{display:flex;flex-direction:column;gap:4px;}
+  .stat-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;}
+  .stat-value{font-family:var(--mono);font-size:14px;font-weight:700;}
+  .stat-bar-wrap{flex:1;min-width:80px;display:flex;flex-direction:column;gap:4px;}
+  .stat-bar-track{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+  .stat-bar-fill{height:100%;border-radius:2px;transition:width 0.6s ease;}
+  .fill-cpu{background:var(--accent);}
+  .fill-ram{background:var(--green);}
+  .fill-disk{background:var(--yellow);}
+
+  /* MAIN */
+  .main{padding:28px 32px;max-width:1400px;margin:0 auto;}
+  .bulk-actions{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
+  .bulk-label{font-family:var(--mono);font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-right:8px;}
+  .bulk-btn{background:var(--bg2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:9px 18px;cursor:pointer;transition:all 0.15s;}
+  .bulk-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .bulk-btn.danger:hover{border-color:var(--red);color:var(--red);}
+  .bulk-btn.warn:hover{border-color:var(--yellow);color:var(--yellow);}
+  .bulk-btn.success:hover{border-color:var(--green);color:var(--green);}
+  .summary-bar{display:flex;gap:24px;margin-bottom:20px;padding:14px 20px;background:var(--bg2);border:1px solid var(--border);flex-wrap:wrap;}
+  .summary-item{font-family:var(--mono);font-size:12px;color:var(--text-dim);}
+  .summary-item strong{color:var(--text);margin-right:4px;}
+  .summary-item.run strong{color:var(--green);}
+  .summary-item.stop strong{color:var(--red);}
+
+  /* CARDS */
+  .labs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+  .lab-card{background:var(--bg2);border:1px solid var(--border);padding:18px 20px;position:relative;overflow:hidden;transition:border-color 0.2s;}
+  .lab-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;transition:background 0.2s;}
+  .lab-card.running::before{background:var(--green);}
+  .lab-card.stopped::before{background:var(--red-dim);}
+  .lab-card.working::before{background:var(--yellow);animation:blink 0.8s ease infinite;}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+  .lab-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .lab-number{font-family:var(--mono);font-size:20px;font-weight:700;}
+  .lab-number span{font-size:11px;color:var(--text-dim);font-weight:400;margin-left:4px;}
+  .lab-status{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;}
+  .status-dot{width:6px;height:6px;border-radius:50%;}
+  .running .status-dot{background:var(--green);box-shadow:0 0 6px var(--green);}
+  .stopped .status-dot{background:var(--red-dim);}
+  .working .status-dot{background:var(--yellow);animation:blink 0.8s ease infinite;}
+  .running .lab-status{color:var(--green);}
+  .stopped .lab-status{color:var(--text-dim);}
+  .working .lab-status{color:var(--yellow);}
+  .lab-info{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:14px;line-height:1.7;}
+  .lab-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .action-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text-dim);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:6px 12px;cursor:pointer;transition:all 0.15s;flex:1;min-width:60px;text-align:center;}
+  .action-btn:hover{color:var(--text);border-color:var(--accent);}
+  .action-btn.deploy:hover{border-color:var(--green);color:var(--green);}
+  .action-btn.destroy:hover{border-color:var(--red);color:var(--red);}
+  .action-btn.restart:hover{border-color:var(--accent);color:var(--accent);}
+  .action-btn.reset:hover{border-color:var(--yellow);color:var(--yellow);}
+
+  /* TOAST */
+  #toast{position:fixed;bottom:28px;right:28px;background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 20px;font-family:var(--mono);font-size:12px;color:var(--text);z-index:999;transform:translateY(80px);opacity:0;transition:all 0.3s ease;max-width:320px;}
+  #toast.show{transform:translateY(0);opacity:1;}
+  #toast.error{border-left-color:var(--red);}
+  #toast.success{border-left-color:var(--green);}
+
+  /* CONFIRM */
+  #confirm-modal{position:fixed;inset:0;background:rgba(10,14,26,0.85);align-items:center;justify-content:center;z-index:200;display:none;}
+  #confirm-modal.open{display:flex;}
+  .confirm-box{background:var(--bg2);border:1px solid var(--border);border-top:2px solid var(--red);padding:32px 36px;width:380px;animation:slideUp 0.2s ease;}
+  .confirm-title{font-size:16px;font-weight:700;margin-bottom:10px;}
+  .confirm-msg{font-family:var(--mono);font-size:12px;color:var(--text-dim);margin-bottom:24px;line-height:1.6;}
+  .confirm-btns{display:flex;gap:10px;}
+  .confirm-yes{flex:1;background:var(--red);border:none;color:white;font-family:var(--sans);font-weight:700;font-size:13px;padding:11px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;}
+  .confirm-yes:hover{background:#ff2244;}
+  .confirm-no{flex:1;background:transparent;border:1px solid var(--border);color:var(--text-dim);font-family:var(--sans);font-size:13px;padding:11px;cursor:pointer;}
+  .confirm-no:hover{border-color:var(--text-dim);color:var(--text);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-page">
+  <div class="login-box">
+    <div class="login-logo">ContainerLab Manager</div>
+    <div class="login-title">Admin<br><span>Dashboard</span></div>
+    <label class="form-label">Password</label>
+    <input type="password" id="login-password" class="form-input" placeholder="Enter admin password">
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error">Invalid password. Try again.</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="header">
+    <div class="header-brand">
+      <div class="header-dot"></div>
+      <div class="header-title">ContainerLab // Lab Manager</div>
+    </div>
+    <div class="header-right">
+      <div class="header-time" id="clock">--:--:--</div>
+      <a href="/student" target="_blank" class="header-btn">Student Page ↗</a>
+      <button class="header-btn" style="border-color:#ff4466;color:#ff4466" onclick="confirmFullReset()">⚠ Full Reset</button>
+      <button class="header-btn danger" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-label">CPU</div><div class="stat-value" id="cpu-val">--%</div></div>
+    <div class="stat-bar-wrap"><div class="stat-bar-track"><div class="stat-bar-fill fill-cpu" id="cpu-bar" style="width:0%"></div></div></div>
+    <div class="stat-item"><div class="stat-label">RAM</div><div class="stat-value" id="ram-val">--/-- GB</div></div>
+    <div class="stat-bar-wrap"><div class="stat-bar-track"><div class="stat-bar-fill fill-ram" id="ram-bar" style="width:0%"></div></div></div>
+    <div class="stat-item"><div class="stat-label">Disk</div><div class="stat-value" id="disk-val">--/-- GB</div></div>
+    <div class="stat-bar-wrap"><div class="stat-bar-track"><div class="stat-bar-fill fill-disk" id="disk-bar" style="width:0%"></div></div></div>
+    <div class="stat-item" style="margin-left:auto">
+      <div class="stat-label">Server</div>
+      <div class="stat-value" id="server-ip-display" style="color:var(--accent);font-size:12px">--</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Labs</div>
+      <div class="stat-value" id="total-labs" style="color:var(--accent)">--</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="bulk-actions">
+      <span class="bulk-label">All Labs:</span>
+      <button class="bulk-btn success" onclick="confirmAction('deploy_all','Deploy ALL labs?','This will start all student labs.')">▶ Deploy All</button>
+      <button class="bulk-btn danger"  onclick="confirmAction('destroy_all','Destroy ALL labs?','This will stop and remove all student labs.')">■ Destroy All</button>
+      <button class="bulk-btn"        onclick="confirmAction('restart_all','Soft restart ALL labs?','Containers reboot. Configs in RAM may be lost.')">↺ Restart All</button>
+      <button class="bulk-btn warn"   onclick="confirmAction('reset_all','Hard reset ALL labs?','WIPES ALL CONFIGS and redeploys from scratch.')">⚡ Reset All</button>
+      <button class="bulk-btn" style="margin-left:auto" onclick="loadStatus()">⟳ Refresh</button>
+    </div>
+    <div class="summary-bar">
+      <div class="summary-item run"><strong id="count-run">0</strong> Running</div>
+      <div class="summary-item stop"><strong id="count-stop">0</strong> Stopped</div>
+      <div class="summary-item"><strong id="count-total">--</strong> Total</div>
+    </div>
+    <div class="labs-grid" id="labs-grid"></div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div id="confirm-modal">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirm-title">Are you sure?</div>
+    <div class="confirm-msg"   id="confirm-msg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-no"  onclick="closeConfirm()">Cancel</button>
+      <button class="confirm-yes" id="confirm-yes-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+let AUTH_TOKEN = localStorage.getItem('clab_token') || '';
+
+async function api(path, method='GET') {
+  const r = await fetch(path, {method, headers:{'X-Auth-Token':AUTH_TOKEN,'Content-Type':'application/json'}});
+  return r.json();
+}
+async function apiPost(path) { return api(path,'POST'); }
+
+async function doLogin() {
+  const pw = document.getElementById('login-password').value;
+  const r  = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+  const d  = await r.json();
+  if (d.ok) {
+    AUTH_TOKEN = d.token;
+    localStorage.setItem('clab_token', AUTH_TOKEN);
+    showDashboard();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function doLogout() {
+  AUTH_TOKEN = '';
+  localStorage.removeItem('clab_token');
+  clearInterval(statusInterval);
+  clearInterval(statsInterval);
+  document.getElementById('dashboard').style.display  = 'none';
+  document.getElementById('login-page').style.display = 'flex';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('labs-grid').innerHTML = '';
+}
+
+document.getElementById('login-password').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+(async () => {
+  if (AUTH_TOKEN) {
+    const d = await api('/api/check_auth');
+    if (d.logged_in) { showDashboard(); return; }
+    AUTH_TOKEN = '';
+    localStorage.removeItem('clab_token');
+  }
+})();
+
+function showDashboard() {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('dashboard').style.display  = 'block';
+  startDashboard();
+}
+
+let statusInterval, statsInterval;
+
+function startDashboard() {
+  loadStatus(); loadStats(); updateClock();
+  statusInterval = setInterval(loadStatus, 8000);
+  statsInterval  = setInterval(loadStats,  3000);
+  setInterval(updateClock, 1000);
+}
+
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-US',{hour12:false});
+}
+
+async function loadStatus() {
+  try {
+    const d = await api('/api/status');
+    if (d.error) return;
+    renderLabs(d.labs, d.total);
+  } catch(e) {}
+}
+
+function renderLabs(labs, total) {
+  const grid = document.getElementById('labs-grid');
+  let running = 0, stopped = 0;
+  const currentIds = new Set(labs.map(l=>`card-${l.student}`));
+  [...grid.querySelectorAll('.lab-card')].forEach(c => { if(!currentIds.has(c.id)) c.remove(); });
+
+  labs.forEach(lab => {
+    const s     = lab.student;
+    const state = lab.running ? 'running' : 'stopped';
+    if (lab.running) running++; else stopped++;
+    const mgmtBase = `192.168.${99+s}`;
+    const id = `card-${s}`;
+    const html = `<div class="lab-card ${state}" id="${id}">
+      <div class="lab-card-header">
+        <div class="lab-number">${String(s).padStart(2,'0')}<span>/ student</span></div>
+        <div class="lab-status"><div class="status-dot"></div>${state}</div>
+      </div>
+      <div class="lab-info">
+        mgmt: ${mgmtBase}.0/24<br>
+        rou-1: ${mgmtBase}.10 → :${2200+s*10+1}<br>
+        pc-1 : ${mgmtBase}.11 → :${2200+s*10+4}
+      </div>
+      <div class="lab-actions">
+        ${lab.running ? `
+          <button class="action-btn restart" onclick="doAction('restart',${s})">↺ Restart</button>
+          <button class="action-btn reset"   onclick="confirmAction('reset','Reset Student ${String(s).padStart(2,'0')}?','Destroy + redeploy. ALL CONFIGS WIPED.',${s})">⚡ Reset</button>
+          <button class="action-btn destroy" onclick="confirmAction('destroy','Destroy Student ${String(s).padStart(2,'0')}?','Lab will be stopped and removed.',${s})">■ Destroy</button>
+        ` : `
+          <button class="action-btn deploy" onclick="doAction('deploy',${s})">▶ Deploy</button>
+        `}
+      </div>
+    </div>`;
+    const existing = document.getElementById(id);
+    if (existing) existing.outerHTML = html;
+    else grid.insertAdjacentHTML('beforeend', html);
+  });
+
+  [...grid.querySelectorAll('.lab-card')]
+    .sort((a,b)=>parseInt(a.id.split('-')[1])-parseInt(b.id.split('-')[1]))
+    .forEach(c=>grid.appendChild(c));
+
+  document.getElementById('count-run').textContent   = running;
+  document.getElementById('count-stop').textContent  = stopped;
+  document.getElementById('count-total').textContent = total || labs.length;
+}
+
+async function loadStats() {
+  try {
+    const d = await api('/api/stats');
+    if (!d.cpu && d.cpu !== 0) return;
+    document.getElementById('cpu-val').textContent   = `${d.cpu}%`;
+    document.getElementById('ram-val').textContent   = `${d.ram_used}/${d.ram_total} GB`;
+    document.getElementById('disk-val').textContent  = `${d.disk_used}/${d.disk_total} GB`;
+    document.getElementById('cpu-bar').style.width   = `${d.cpu}%`;
+    document.getElementById('ram-bar').style.width   = `${d.ram_pct}%`;
+    document.getElementById('disk-bar').style.width  = `${d.disk_pct}%`;
+    document.getElementById('total-labs').textContent       = d.num_students || '--';
+    document.getElementById('server-ip-display').textContent = d.server_ip   || '--';
+  } catch(e) {}
+}
+
+async function doAction(action, student) {
+  const path = student != null ? `/api/${action}/${student}` : `/api/${action}/all`;
+  showToast(`${action} ${student!=null?`student ${String(student).padStart(2,'0')}`:'all'}...`);
+  try {
+    const d = await apiPost(path);
+    showToast(d.output||'Done', d.ok?'success':'error');
+  } catch(e) { showToast('Error: '+e.message,'error'); }
+  setTimeout(loadStatus, 4000);
+  setTimeout(loadStatus, 12000);
+}
+
+function confirmAction(action, title, msg, student) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent   = msg;
+  document.getElementById('confirm-modal').classList.add('open');
+  document.getElementById('confirm-yes-btn').onclick = () => {
+    closeConfirm();
+    const bulk = ['deploy_all','destroy_all','restart_all','reset_all'];
+    if (bulk.includes(action)) doAction(action.replace('_all',''), null);
+    else doAction(action, student);
+  };
+}
+
+function confirmFullReset() {
+  document.getElementById('confirm-title').textContent = '⚠ Full System Reset';
+  document.getElementById('confirm-msg').textContent   =
+    'This will:\n• Destroy ALL running student labs\n• Delete ALL generated topology files\n• Delete config and uploaded topology\n• Return to setup wizard\n\nThis cannot be undone.';
+  document.getElementById('confirm-modal').classList.add('open');
+  document.getElementById('confirm-yes-btn').onclick = async () => {
+    closeConfirm();
+    showToast('Full reset in progress...', '');
+    try {
+      const d = await apiPost('/api/reset_all_data');
+      showToast(d.output || 'Reset started...', 'success');
+      // Redirect to setup wizard after delay
+      setTimeout(() => { window.location.href = '/setup'; }, 5000);
+    } catch(e) {
+      showToast('Error: ' + e.message, 'error');
+    }
+  };
+}
+
+
+document.getElementById('confirm-modal').addEventListener('click', e => {
+  if(e.target===document.getElementById('confirm-modal')) closeConfirm();
+});
+
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.className=type; }, 3500);
+}
+</script>
+</body>
+</html>
