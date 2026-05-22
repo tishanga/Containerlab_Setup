@@ -85,19 +85,22 @@ def check_auth():
 # ── Page routing ───────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
+    """Student portal — public, no login needed."""
+    return send_from_directory(WEB_DIR, "student.html")
+
+@app.route("/admin")
+def admin_page():
+    """Admin dashboard — login required."""
     if not is_setup_complete():
         return redirect("/setup")
     return send_from_directory(WEB_DIR, "dashboard.html")
 
 @app.route("/setup")
 def setup_page():
+    """First-time setup wizard."""
     if is_setup_complete():
-        return redirect("/")
+        return redirect("/admin")
     return send_from_directory(WEB_DIR, "setup.html")
-
-@app.route("/student")
-def student_page():
-    return send_from_directory(WEB_DIR, "student.html")
 
 @app.route("/<path:filename>")
 def static_files(filename):
